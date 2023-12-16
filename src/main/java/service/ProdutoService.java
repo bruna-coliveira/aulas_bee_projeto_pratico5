@@ -1,0 +1,80 @@
+package service;
+
+import dto.ProdutoDTO;
+import model.Produto;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import repository.ProdutoRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class ProdutoService {
+    private final ProdutoRepository produtoRepository;
+    private ModelMapper modelMapper = new ModelMapper();
+
+    @Autowired
+    public ProdutoService(ProdutoRepository produtoRepository) {
+        this.produtoRepository = produtoRepository;
+    }
+
+    public ProdutoDTO convertToDTO(Produto produto) {
+        return modelMapper.map(produto, ProdutoDTO.class);
+    }
+
+    public Produto convertToProduto(ProdutoDTO produtoDTO) {
+        return modelMapper.map(produtoDTO, Produto.class);
+    }
+
+    public Produto salvarProduto(Produto produto) {
+        return produtoRepository.save(produto);
+    }
+
+    public ProdutoDTO salvarProduto(ProdutoDTO produtoDTO) {
+        Produto produto = convertToProduto(produtoDTO);
+        return convertToDTO(produtoRepository.save(produto));
+    }
+
+    public Optional<Produto> findById(String id) {
+        produtoRepository.findByNome(id);
+        return produtoRepository.findById(id);
+
+    }
+
+    public ProdutoDTO atualizarProduto(String id, ProdutoDTO produtoDTO) {
+        Produto produtoExistente = produtoRepository.findById(id).
+                orElse(null);
+        if(produtoExistente != null){
+            produtoExistente.setNome(produtoDTO.getNome());
+            produtoExistente.setDescricao(produtoDTO.getDescricao());
+            produtoExistente.setPreco(produtoDTO.getPreco());
+
+            return convertToDTO(produtoRepository.save(produtoExistente));
+        } else {
+            return null;
+        }
+
+    }
+
+    public List<ProdutoDTO> consultarPorNome(String nome) {
+        List<Produto> listaProdutosPorNome = produtoRepository.findByNome(nome);
+        List<ProdutoDTO> listaDTO = listaProdutosPorNome.stream()
+                .map(source -> modelMapper.map(source, ProdutoDTO.class))
+                .collect(Collectors.toList());
+        return listaDTO;
+    }
+
+    public boolean deletarPorNome(String id) {
+        Optional<Produto> produtoOptional = produtoRepository.findById(id);
+
+        if (produtoOptional.isPresent()) {
+            produtoRepository.deleteById(id);
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
